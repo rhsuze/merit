@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>靜心木魚</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: #121212;
+      color: #E6E6E6;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Noto Sans TC", sans-serif;
+      height: 100vh;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    /* 頂部控制列 */
+    header {
+      width: 100%;
+      display: flex;
+      justify-content: flex-end;
+      padding: 20px 24px;
+      z-index: 10;
+    }
+
+    .icon-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+      opacity: 0.25;
+      transition: opacity 0.2s ease, transform 0.15s ease;
+      color: #C8B9A6;
+    }
+
+    .icon-btn:active {
+      opacity: 0.8;
+      transform: scale(0.9);
+    }
+
+    .icon-btn svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* 計數區域 */
+    .counter-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    .count-label {
+      font-size: 0.85rem;
+      letter-spacing: 0.2em;
+      color: #7D756C;
+      margin-bottom: 6px;
+    }
+
+    .count-number {
+      font-size: 3.2rem;
+      font-weight: 300;
+      letter-spacing: 0.05em;
+      color: #D4C7B5;
+      opacity: 0.7;
+      transition: opacity 0.1s ease;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .count-number.pulse {
+      opacity: 1;
+    }
+
+    /* 木魚敲擊區 */
+    .tap-area {
+      position: relative;
+      width: 100%;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-bottom: 40px;
+    }
+
+    .muyu-wrapper {
+      position: relative;
+      cursor: pointer;
+      transform-origin: center center;
+      transition: transform 0.08s cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    .muyu-wrapper.hit {
+      transform: scale(0.96);
+    }
+
+    .muyu-svg {
+      width: min(65vw, 240px);
+      height: auto;
+      filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.45));
+    }
+
+    /* 浮動字體動效 */
+    .float-text {
+      position: absolute;
+      font-size: 1.15rem;
+      letter-spacing: 0.15em;
+      color: #E2D6C5;
+      pointer-events: none;
+      font-weight: 400;
+      opacity: 0.85;
+      animation: floatUp 0.85s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+    }
+
+    @keyframes floatUp {
+      0% {
+        transform: translate(-50%, 0) scale(0.95);
+        opacity: 0.85;
+      }
+      70% {
+        opacity: 0.5;
+      }
+      100% {
+        transform: translate(-50%, -65px) scale(1);
+        opacity: 0;
+      }
+    }
+
+    /* 確認視窗 */
+    .dialog-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 100;
+    }
+
+    .dialog-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .dialog-box {
+      background: #1E1E1E;
+      border: 1px solid #2C2C2C;
+      border-radius: 16px;
+      padding: 24px 28px;
+      width: 80%;
+      max-width: 300px;
+      text-align: center;
+    }
+
+    .dialog-title {
+      font-size: 1rem;
+      color: #CFC5B8;
+      margin-bottom: 20px;
+      letter-spacing: 0.05em;
+    }
+
+    .dialog-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .dialog-btn {
+      flex: 1;
+      padding: 10px 0;
+      border-radius: 8px;
+      border: none;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .btn-cancel {
+      background: #2A2A2A;
+      color: #9C948A;
+    }
+
+    .btn-confirm {
+      background: #453831;
+      color: #E2D6C5;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <button id="resetBtn" class="icon-btn" aria-label="重設次數">
+      <svg viewBox="0 0 24 24">
+        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+        <path d="M3 3v5h5" />
+      </svg>
+    </button>
+  </header>
+
+  <div class="counter-container">
+    <span class="count-label">功德次數</span>
+    <span id="counter" class="count-number">0</span>
+  </div>
+
+  <main class="tap-area" id="tapArea">
+    <div id="muyu" class="muyu-wrapper">
+      <svg class="muyu-svg" viewBox="0 0 200 170" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- 木魚主體 -->
+        <path d="M100 15C45 15 15 55 15 105C15 145 50 160 100 160C150 160 185 145 185 105C185 55 155 15 100 15Z" fill="#3D3028"/>
+        <!-- 腔口陰影深槽 -->
+        <path d="M40 108C55 98 145 98 160 108C145 125 55 125 40 108Z" fill="#1C1613"/>
+        <!-- 上部魚身弧線與鱗紋裝飾 -->
+        <path d="M50 72C70 65 130 65 150 72" stroke="#4F3F35" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M65 52C80 47 120 47 135 52" stroke="#4F3F35" stroke-width="3" stroke-linecap="round"/>
+        <!-- 魚眼孔結構 -->
+        <circle cx="48" cy="92" r="5.5" fill="#1C1613"/>
+        <circle cx="152" cy="92" r="5.5" fill="#1C1613"/>
+      </svg>
+    </div>
+  </main>
+
+  <!-- 歸零確認彈窗 -->
+  <div id="dialog" class="dialog-overlay">
+    <div class="dialog-box">
+      <p class="dialog-title">確定重設功德計數？</p>
+      <div class="dialog-actions">
+        <button id="cancelReset" class="dialog-btn btn-cancel">取消</button>
+        <button id="confirmReset" class="dialog-btn btn-confirm">重設</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 狀態持久化
+    const STORAGE_KEY = 'zen_muyu_merit_count';
+    let count = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+
+    const counterEl = document.getElementById('counter');
+    const muyuEl = document.getElementById('muyu');
+    const tapArea = document.getElementById('tapArea');
+    const resetBtn = document.getElementById('resetBtn');
+    const dialog = document.getElementById('dialog');
+    const confirmReset = document.getElementById('confirmReset');
+    const cancelReset = document.getElementById('cancelReset');
+
+    counterEl.textContent = count.toLocaleString();
+
+    // 聲學引擎：合成腔體木質打擊音
+    let audioCtx = null;
+
+    function playWoodAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      const now = audioCtx.currentTime;
+
+      // 1. 基頻振盪器（580Hz 往下掉至 400Hz，呈現實心木空腔感）
+      const osc = audioCtx.createOscillator();
+      const oscGain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(580, now);
+      osc.frequency.exponentialRampToValueAtTime(380, now + 0.09);
+
+      oscGain.gain.setValueAtTime(0.9, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+      // 2. 叩擊起音（瞬態敲擊聲）
+      const click = audioCtx.createOscillator();
+      const clickGain = audioCtx.createGain();
+      click.type = 'sine';
+      click.frequency.setValueAtTime(1200, now);
+      click.frequency.exponentialRampToValueAtTime(150, now + 0.025);
+
+      clickGain.gain.setValueAtTime(0.7, now);
+      clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+
+      // 3. 帶通濾波器（強化腔體共鳴）
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(540, now);
+      filter.Q.setValueAtTime(3.5, now);
+
+      osc.connect(oscGain);
+      oscGain.connect(filter);
+
+      click.connect(clickGain);
+      clickGain.connect(filter);
+
+      filter.connect(audioCtx.destination);
+
+      osc.start(now);
+      click.start(now);
+      osc.stop(now + 0.18);
+      click.stop(now + 0.03);
+    }
+
+    // 觸覺微震動
+    function triggerHaptic() {
+      if ('vibrate' in navigator) {
+        try {
+          navigator.vibrate(15);
+        } catch (e) {}
+      }
+    }
+
+    // 飄字動效
+    function showFloatingText(x, y) {
+      const text = document.createElement('span');
+      text.className = 'float-text';
+      text.textContent = '功德+1';
+      text.style.left = `${x}px`;
+      text.style.top = `${y}px`;
+
+      tapArea.appendChild(text);
+
+      setTimeout(() => {
+        text.remove();
+      }, 850);
+    }
+
+    // 核心敲擊事件
+    function tap(e) {
+      e.preventDefault();
+
+      playWoodAudio();
+      triggerHaptic();
+
+      // 數值增長與儲存
+      count += 1;
+      counterEl.textContent = count.toLocaleString();
+      localStorage.setItem(STORAGE_KEY, count.toString());
+
+      // 數字微幅提亮
+      counterEl.classList.add('pulse');
+      setTimeout(() => counterEl.classList.remove('pulse'), 120);
+
+      // 木魚受擊形變
+      muyuEl.classList.remove('hit');
+      void muyuEl.offsetWidth; // 強制重繪確保每次敲擊都能觸活動畫
+      muyuEl.classList.add('hit');
+      setTimeout(() => muyuEl.classList.remove('hit'), 90);
+
+      // 產生浮字位置（取自點擊點或木魚中心）
+      const rect = tapArea.getBoundingClientRect();
+      let clientX = rect.width / 2;
+      let clientY = rect.height / 2 - 20;
+
+      if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY - rect.top;
+      } else if (e.clientX) {
+        clientX = e.clientX;
+        clientY = e.clientY - rect.top;
+      }
+
+      showFloatingText(clientX, clientY);
+    }
+
+    // 支援觸控與滑鼠點擊
+    tapArea.addEventListener('touchstart', tap, { passive: false });
+    tapArea.addEventListener('mousedown', (e) => {
+      // 避免與 touchstart 重複觸發
+      if ('ontouchstart' in window) return;
+      tap(e);
+    });
+
+    // 歸零控制
+    resetBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dialog.classList.add('active');
+    });
+
+    cancelReset.addEventListener('click', () => {
+      dialog.classList.remove('active');
+    });
+
+    confirmReset.addEventListener('click', () => {
+      count = 0;
+      counterEl.textContent = '0';
+      localStorage.setItem(STORAGE_KEY, '0');
+      dialog.classList.remove('active');
+    });
+  </script>
+</body>
+</html>
