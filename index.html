@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>功德無量</title>
+  <title>靜心木魚 - 功德榜</title>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
   <style>
     * {
       box-sizing: border-box;
@@ -30,13 +35,20 @@
       touch-action: manipulation;
     }
 
-    /* 頂部控制列 */
+    /* 頂部功能列 */
     header {
       width: 100%;
       display: flex;
-      justify-content: flex-end;
-      padding: 20px 24px;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 24px;
       z-index: 10;
+    }
+
+    .user-tag {
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      color: #8C8275;
     }
 
     .icon-btn {
@@ -44,19 +56,23 @@
       border: none;
       cursor: pointer;
       padding: 8px;
-      opacity: 0.25;
+      opacity: 0.45;
       transition: opacity 0.2s ease, transform 0.15s ease;
       color: #C8B9A6;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.85rem;
     }
 
     .icon-btn:active {
-      opacity: 0.8;
-      transform: scale(0.9);
+      opacity: 0.9;
+      transform: scale(0.95);
     }
 
     .icon-btn svg {
-      width: 22px;
-      height: 22px;
+      width: 20px;
+      height: 20px;
       stroke: currentColor;
       fill: none;
       stroke-width: 1.8;
@@ -64,27 +80,28 @@
       stroke-linejoin: round;
     }
 
-    /* 計數區域 */
-    .counter-container {
+    /* 計數與計時區域 */
+    .dashboard {
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin-top: 10px;
+      margin-top: 5px;
     }
 
-    .count-label {
-      font-size: 0.85rem;
-      letter-spacing: 0.2em;
+    .timer {
+      font-size: 0.95rem;
+      letter-spacing: 0.15em;
       color: #7D756C;
-      margin-bottom: 6px;
+      font-variant-numeric: tabular-nums;
+      margin-bottom: 4px;
     }
 
     .count-number {
-      font-size: 3.2rem;
+      font-size: 3.5rem;
       font-weight: 300;
       letter-spacing: 0.05em;
       color: #D4C7B5;
-      opacity: 0.7;
+      opacity: 0.8;
       transition: opacity 0.1s ease;
       font-variant-numeric: tabular-nums;
     }
@@ -101,7 +118,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding-bottom: 40px;
     }
 
     .muyu-wrapper {
@@ -147,18 +163,44 @@
       }
     }
 
-    /* 確認視窗 */
+    /* 底部操作區 */
+    footer {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding-bottom: 36px;
+      z-index: 10;
+    }
+
+    .finish-btn {
+      background: #1C1917;
+      border: 1px solid #3A322C;
+      color: #C8B9A6;
+      padding: 10px 28px;
+      border-radius: 24px;
+      font-size: 0.95rem;
+      letter-spacing: 0.15em;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .finish-btn:active {
+      background: #2D2520;
+      transform: scale(0.96);
+    }
+
+    /* 彈出視窗共用樣式 */
     .dialog-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.65);
-      backdrop-filter: blur(4px);
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(6px);
       display: flex;
       align-items: center;
       justify-content: center;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s ease;
+      transition: opacity 0.25s ease;
       z-index: 100;
     }
 
@@ -168,20 +210,45 @@
     }
 
     .dialog-box {
-      background: #1E1E1E;
-      border: 1px solid #2C2C2C;
-      border-radius: 16px;
-      padding: 24px 28px;
-      width: 80%;
-      max-width: 300px;
+      background: #1C1A18;
+      border: 1px solid #2F2A25;
+      border-radius: 18px;
+      padding: 26px 24px;
+      width: 86%;
+      max-width: 320px;
       text-align: center;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.6);
     }
 
     .dialog-title {
-      font-size: 1rem;
-      color: #CFC5B8;
+      font-size: 1.1rem;
+      color: #D4C7B5;
+      margin-bottom: 8px;
+      letter-spacing: 0.08em;
+    }
+
+    .dialog-desc {
+      font-size: 0.85rem;
+      color: #8C8275;
       margin-bottom: 20px;
-      letter-spacing: 0.05em;
+      line-height: 1.5;
+    }
+
+    .zen-input {
+      width: 100%;
+      background: #121110;
+      border: 1px solid #3A332C;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      color: #E2D6C5;
+      text-align: center;
+      margin-bottom: 18px;
+      outline: none;
+    }
+
+    .zen-input:focus {
+      border-color: #7D6B58;
     }
 
     .dialog-actions {
@@ -191,86 +258,252 @@
 
     .dialog-btn {
       flex: 1;
-      padding: 10px 0;
-      border-radius: 8px;
+      padding: 11px 0;
+      border-radius: 10px;
       border: none;
       font-size: 0.9rem;
       cursor: pointer;
+      letter-spacing: 0.05em;
     }
 
     .btn-cancel {
-      background: #2A2A2A;
-      color: #9C948A;
+      background: #282421;
+      color: #8C8275;
     }
 
     .btn-confirm {
-      background: #453831;
+      background: #4A3A2F;
+      color: #E6D8C8;
+    }
+
+    /* 排行榜表格樣式 */
+    .leaderboard-box {
+      max-width: 360px;
+      max-height: 75vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .rank-list {
+      overflow-y: auto;
+      margin: 12px 0 20px;
+      max-height: 48vh;
+      border-top: 1px solid #2B2521;
+    }
+
+    .rank-item {
+      display: grid;
+      grid-template-columns: 36px 1fr 60px 65px;
+      align-items: center;
+      padding: 10px 0;
+      font-size: 0.85rem;
+      border-bottom: 1px solid #231E1A;
+      text-align: left;
+    }
+
+    .rank-num {
+      color: #7D756C;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rank-item:nth-child(1) .rank-num { color: #E5B25D; font-weight: 600; }
+    .rank-item:nth-child(2) .rank-num { color: #B0B0B0; font-weight: 600; }
+    .rank-item:nth-child(3) .rank-num { color: #A6734E; font-weight: 600; }
+
+    .rank-name {
+      color: #D4C7B5;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-right: 6px;
+    }
+
+    .rank-count {
       color: #E2D6C5;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .rank-time {
+      color: #7D756C;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      font-size: 0.8rem;
     }
   </style>
 </head>
 <body>
 
+  <!-- 頂部列 -->
   <header>
-    <button id="resetBtn" class="icon-btn" aria-label="重設次數">
+    <span id="displayNickname" class="user-tag">善信：—</span>
+    <button id="showLeaderboardBtn" class="icon-btn" aria-label="查看功德榜">
       <svg viewBox="0 0 24 24">
-        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-        <path d="M3 3v5h5" />
+        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+        <path d="M4 22h16" />
+        <path d="M10 14.66V17c0 .55-.45 1-1 1H7" />
+        <path d="M14 14.66V17c0 .55.45 1 1 1h2" />
+        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
       </svg>
+      <span>功德榜</span>
     </button>
   </header>
 
-  <div class="counter-container">
-    <span class="count-label">功德次數</span>
+  <!-- 計數與計時 -->
+  <div class="dashboard">
+    <span id="timerText" class="timer">00:00</span>
     <span id="counter" class="count-number">0</span>
   </div>
 
+  <!-- 木魚點擊區 -->
   <main class="tap-area" id="tapArea">
     <div id="muyu" class="muyu-wrapper">
       <svg class="muyu-svg" viewBox="0 0 200 170" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- 木魚主體 -->
         <path d="M100 15C45 15 15 55 15 105C15 145 50 160 100 160C150 160 185 145 185 105C185 55 155 15 100 15Z" fill="#3D3028"/>
-        <!-- 腔口陰影深槽 -->
         <path d="M40 108C55 98 145 98 160 108C145 125 55 125 40 108Z" fill="#1C1613"/>
-        <!-- 上部魚身弧線與鱗紋裝飾 -->
         <path d="M50 72C70 65 130 65 150 72" stroke="#4F3F35" stroke-width="3.5" stroke-linecap="round"/>
         <path d="M65 52C80 47 120 47 135 52" stroke="#4F3F35" stroke-width="3" stroke-linecap="round"/>
-        <!-- 魚眼孔結構 -->
         <circle cx="48" cy="92" r="5.5" fill="#1C1613"/>
         <circle cx="152" cy="92" r="5.5" fill="#1C1613"/>
       </svg>
     </div>
   </main>
 
-  <!-- 歸零確認彈窗 -->
-  <div id="dialog" class="dialog-overlay">
+  <!-- 底部完成按鈕 -->
+  <footer>
+    <button id="finishBtn" class="finish-btn">功德圓滿</button>
+  </footer>
+
+  <!-- 1. 暱稱輸入彈窗 -->
+  <div id="nicknameDialog" class="dialog-overlay active">
     <div class="dialog-box">
-      <p class="dialog-title">確定重設功德計數？</p>
+      <h3 class="dialog-title">入定念經</h3>
+      <p class="dialog-desc">請輸入尊名或法號以啟動功德計量</p>
+      <input type="text" id="nicknameInput" class="zen-input" maxlength="10" placeholder="最多十個字元" autocomplete="off" />
+      <button id="startSessionBtn" class="dialog-btn btn-confirm" style="width: 100%;">靜心開始</button>
+    </div>
+  </div>
+
+  <!-- 2. 功德圓滿結算確認彈窗 -->
+  <div id="finishDialog" class="dialog-overlay">
+    <div class="dialog-box">
+      <h3 class="dialog-title">功德圓滿</h3>
+      <p id="finishSummary" class="dialog-desc"></p>
       <div class="dialog-actions">
-        <button id="cancelReset" class="dialog-btn btn-cancel">取消</button>
-        <button id="confirmReset" class="dialog-btn btn-confirm">重設</button>
+        <button id="cancelFinishBtn" class="dialog-btn btn-cancel">繼續念經</button>
+        <button id="submitFinishBtn" class="dialog-btn btn-confirm">登錄功德榜</button>
       </div>
     </div>
   </div>
 
-  <script>
-    // 狀態持久化
-    const STORAGE_KEY = 'zen_muyu_merit_count';
-    let count = parseInt(localStorage.getItem(STORAGE_KEY) || '0', 10);
+  <!-- 3. 全球功德榜彈窗 -->
+  <div id="leaderboardDialog" class="dialog-overlay">
+    <div class="dialog-box leaderboard-box">
+      <h3 class="dialog-title">全球功德榜</h3>
+      <p class="dialog-desc" style="margin-bottom: 8px;">同修念經功德總覽</p>
+      <div id="rankList" class="rank-list">
+        <!-- 動態填入榜單 -->
+        <p style="padding: 20px; color: #7D756C; font-size: 0.85rem;">載入中...</p>
+      </div>
+      <button id="closeLeaderboardBtn" class="dialog-btn btn-cancel" style="width: 100%;">返回修行</button>
+    </div>
+  </div>
 
+  <script>
+    // ----------------------------------------------------
+    // 請在此填入你在 Firebase 取得的 config 物件
+    // ----------------------------------------------------
+    const firebaseConfig = {
+  apiKey: "AIzaSyA6OOMF7P74ZDTAK8DJO-JTtrj-4FpcJ7s",
+  authDomain: "merit-test-game.firebaseapp.com",
+  projectId: "merit-test-game",
+  storageBucket: "merit-test-game.firebasestorage.app",
+  messagingSenderId: "403106598553",
+  appId: "1:403106598553:web:b41705c0a052c7ba563208"
+};
+
+    let db = null;
+    try {
+      if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+        firebase.initializeApp(firebaseConfig);
+        db = firebase.firestore();
+      }
+    } catch (err) {
+      console.warn("Firebase 初始化提示：尚未替換為個人金鑰，榜單將以本機暫存模式展示。");
+    }
+
+    // 狀態變數
+    let currentNickname = "";
+    let sessionCount = 0;
+    let timerInterval = null;
+    let elapsedSeconds = 0;
+    let isSessionActive = false;
+
+    // DOM 元素
     const counterEl = document.getElementById('counter');
+    const timerText = document.getElementById('timerText');
     const muyuEl = document.getElementById('muyu');
     const tapArea = document.getElementById('tapArea');
-    const resetBtn = document.getElementById('resetBtn');
-    const dialog = document.getElementById('dialog');
-    const confirmReset = document.getElementById('confirmReset');
-    const cancelReset = document.getElementById('cancelReset');
+    const displayNickname = document.getElementById('displayNickname');
+    const nicknameDialog = document.getElementById('nicknameDialog');
+    const nicknameInput = document.getElementById('nicknameInput');
+    const startSessionBtn = document.getElementById('startSessionBtn');
+    const finishBtn = document.getElementById('finishBtn');
+    const finishDialog = document.getElementById('finishDialog');
+    const finishSummary = document.getElementById('finishSummary');
+    const cancelFinishBtn = document.getElementById('cancelFinishBtn');
+    const submitFinishBtn = document.getElementById('submitFinishBtn');
+    const showLeaderboardBtn = document.getElementById('showLeaderboardBtn');
+    const leaderboardDialog = document.getElementById('leaderboardDialog');
+    const closeLeaderboardBtn = document.getElementById('closeLeaderboardBtn');
+    const rankList = document.getElementById('rankList');
 
-    counterEl.textContent = count.toLocaleString();
+    // 時間格式化 (MM:SS 或 HH:MM:SS)
+    function formatTime(totalSeconds) {
+      const h = Math.floor(totalSeconds / 3600);
+      const m = Math.floor((totalSeconds % 3600) / 60);
+      const s = totalSeconds % 60;
+      if (h > 0) {
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+      }
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
 
-    // 聲學引擎：合成腔體木質打擊音
+    // 啟動計時器
+    function startTimer() {
+      clearInterval(timerInterval);
+      elapsedSeconds = 0;
+      timerText.textContent = "00:00";
+      timerInterval = setInterval(() => {
+        elapsedSeconds += 1;
+        timerText.textContent = formatTime(elapsedSeconds);
+      }, 1000);
+    }
+
+    function stopTimer() {
+      clearInterval(timerInterval);
+    }
+
+    // 1. 入定 / 啟動流程
+    startSessionBtn.addEventListener('click', () => {
+      const val = nicknameInput.value.trim();
+      if (!val) {
+        alert("請輸入尊名或法號");
+        return;
+      }
+      currentNickname = val.slice(0, 10);
+      displayNickname.textContent = `善信：${currentNickname}`;
+      nicknameDialog.classList.remove('active');
+
+      sessionCount = 0;
+      counterEl.textContent = "0";
+      isSessionActive = true;
+      startTimer();
+    });
+
+    // 2. 聲學合成引擎
     let audioCtx = null;
-
     function playWoodAudio() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -280,8 +513,6 @@
       }
 
       const now = audioCtx.currentTime;
-
-      // 1. 基頻振盪器（580Hz 往下掉至 400Hz，呈現實心木空腔感）
       const osc = audioCtx.createOscillator();
       const oscGain = audioCtx.createGain();
       osc.type = 'triangle';
@@ -291,7 +522,6 @@
       oscGain.gain.setValueAtTime(0.9, now);
       oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
 
-      // 2. 叩擊起音（瞬態敲擊聲）
       const click = audioCtx.createOscillator();
       const clickGain = audioCtx.createGain();
       click.type = 'sine';
@@ -301,7 +531,6 @@
       clickGain.gain.setValueAtTime(0.7, now);
       clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
 
-      // 3. 帶通濾波器（強化腔體共鳴）
       const filter = audioCtx.createBiquadFilter();
       filter.type = 'bandpass';
       filter.frequency.setValueAtTime(540, now);
@@ -309,10 +538,8 @@
 
       osc.connect(oscGain);
       oscGain.connect(filter);
-
       click.connect(clickGain);
       clickGain.connect(filter);
-
       filter.connect(audioCtx.destination);
 
       osc.start(now);
@@ -321,53 +548,41 @@
       click.stop(now + 0.03);
     }
 
-    // 觸覺微震動
     function triggerHaptic() {
       if ('vibrate' in navigator) {
-        try {
-          navigator.vibrate(15);
-        } catch (e) {}
+        try { navigator.vibrate(15); } catch (e) {}
       }
     }
 
-    // 飄字動效
     function showFloatingText(x, y) {
       const text = document.createElement('span');
       text.className = 'float-text';
       text.textContent = '功德+1';
       text.style.left = `${x}px`;
       text.style.top = `${y}px`;
-
       tapArea.appendChild(text);
-
-      setTimeout(() => {
-        text.remove();
-      }, 850);
+      setTimeout(() => text.remove(), 850);
     }
 
-    // 核心敲擊事件
-    function tap(e) {
+    // 3. 敲擊互動
+    function handleTap(e) {
       e.preventDefault();
+      if (!isSessionActive) return;
 
       playWoodAudio();
       triggerHaptic();
 
-      // 數值增長與儲存
-      count += 1;
-      counterEl.textContent = count.toLocaleString();
-      localStorage.setItem(STORAGE_KEY, count.toString());
+      sessionCount += 1;
+      counterEl.textContent = sessionCount.toLocaleString();
 
-      // 數字微幅提亮
       counterEl.classList.add('pulse');
       setTimeout(() => counterEl.classList.remove('pulse'), 120);
 
-      // 木魚受擊形變
       muyuEl.classList.remove('hit');
-      void muyuEl.offsetWidth; // 強制重繪確保每次敲擊都能觸活動畫
+      void muyuEl.offsetWidth;
       muyuEl.classList.add('hit');
       setTimeout(() => muyuEl.classList.remove('hit'), 90);
 
-      // 產生浮字位置（取自點擊點或木魚中心）
       const rect = tapArea.getBoundingClientRect();
       let clientX = rect.width / 2;
       let clientY = rect.height / 2 - 20;
@@ -383,29 +598,121 @@
       showFloatingText(clientX, clientY);
     }
 
-    // 支援觸控與滑鼠點擊
-    tapArea.addEventListener('touchstart', tap, { passive: false });
+    tapArea.addEventListener('touchstart', handleTap, { passive: false });
     tapArea.addEventListener('mousedown', (e) => {
-      // 避免與 touchstart 重複觸發
       if ('ontouchstart' in window) return;
-      tap(e);
+      handleTap(e);
     });
 
-    // 歸零控制
-    resetBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      dialog.classList.add('active');
+    // 4. 結算「功德圓滿」
+    finishBtn.addEventListener('click', () => {
+      if (!isSessionActive || sessionCount === 0) {
+        alert("請先敲擊木魚累積功德。");
+        return;
+      }
+      stopTimer();
+      finishSummary.innerHTML = `本次念經共積累 <b>${sessionCount}</b> 次功德<br>歷時 <b>${formatTime(elapsedSeconds)}</b>`;
+      finishDialog.classList.add('active');
     });
 
-    cancelReset.addEventListener('click', () => {
-      dialog.classList.remove('active');
+    cancelFinishBtn.addEventListener('click', () => {
+      finishDialog.classList.remove('active');
+      // 恢復計時
+      timerInterval = setInterval(() => {
+        elapsedSeconds += 1;
+        timerText.textContent = formatTime(elapsedSeconds);
+      }, 1000);
     });
 
-    confirmReset.addEventListener('click', () => {
-      count = 0;
-      counterEl.textContent = '0';
-      localStorage.setItem(STORAGE_KEY, '0');
-      dialog.classList.remove('active');
+    // 送出成績到雲端
+    submitFinishBtn.addEventListener('click', async () => {
+      submitFinishBtn.disabled = true;
+      submitFinishBtn.textContent = "登錄中...";
+
+      const record = {
+        nickname: currentNickname,
+        count: sessionCount,
+        duration: elapsedSeconds,
+        durationFormatted: formatTime(elapsedSeconds),
+        timestamp: Date.now()
+      };
+
+      if (db) {
+        try {
+          await db.collection("merit_ranks").add(record);
+        } catch (err) {
+          console.error("登錄失敗", err);
+          alert("網路連線有誤，成績已暫存本地。");
+        }
+      } else {
+        // 若尚未設定 Firebase，存入本地陣列作為備案
+        let localRanks = JSON.parse(localStorage.getItem('local_zen_ranks') || '[]');
+        localRanks.push(record);
+        localStorage.setItem('local_zen_ranks', JSON.stringify(localRanks));
+      }
+
+      submitFinishBtn.disabled = false;
+      submitFinishBtn.textContent = "登錄功德榜";
+      finishDialog.classList.remove('active');
+
+      // 重置當前時段，開啟功德榜
+      isSessionActive = false;
+      loadLeaderboard();
+      leaderboardDialog.classList.add('active');
+    });
+
+    // 5. 載入並渲染排行榜
+    async function loadLeaderboard() {
+      rankList.innerHTML = `<p style="padding: 20px; color: #7D756C; font-size: 0.85rem;">載入中...</p>`;
+
+      let ranks = [];
+
+      if (db) {
+        try {
+          const snapshot = await db.collection("merit_ranks")
+            .orderBy("count", "desc")
+            .limit(30)
+            .get();
+          snapshot.forEach(doc => ranks.push(doc.data()));
+        } catch (err) {
+          console.error("讀取榜單失敗", err);
+        }
+      } else {
+        let localRanks = JSON.parse(localStorage.getItem('local_zen_ranks') || '[]');
+        ranks = localRanks.sort((a, b) => b.count - a.count).slice(0, 30);
+      }
+
+      if (ranks.length === 0) {
+        rankList.innerHTML = `<p style="padding: 20px; color: #7D756C; font-size: 0.85rem;">尚無功德紀錄，靜候善信登錄。</p>`;
+        return;
+      }
+
+      let html = "";
+      ranks.forEach((item, idx) => {
+        html += `
+          <div class="rank-item">
+            <span class="rank-num">${idx + 1}</span>
+            <span class="rank-name">${item.nickname}</span>
+            <span class="rank-count">${item.count.toLocaleString()}</span>
+            <span class="rank-time">${item.durationFormatted || formatTime(item.duration)}</span>
+          </div>
+        `;
+      });
+      rankList.innerHTML = html;
+    }
+
+    showLeaderboardBtn.addEventListener('click', () => {
+      loadLeaderboard();
+      leaderboardDialog.classList.add('active');
+    });
+
+    closeLeaderboardBtn.addEventListener('click', () => {
+      leaderboardDialog.classList.remove('active');
+      if (!isSessionActive) {
+        // 若是剛結算完關閉榜單，重新提示輸入暱稱展開新時段
+        nicknameInput.value = currentNickname;
+        nicknameDialog.classList.add('active');
+      }
     });
   </script>
 </body>
